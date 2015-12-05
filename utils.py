@@ -1,4 +1,5 @@
-
+import random
+import numpy as np 
 
 #----- Default values -----#
 mismatch = -1
@@ -6,6 +7,35 @@ match = 2
 gap = -2
 
 #----- Methods ------#
+def create_test_set(size=1000, length=100):
+	with open('Data/genome.txt', 'r') as handle:
+		genome = list(handle.read().strip())
+	with open('Data/probabilities.txt', 'r') as handle:
+		probs = [float(f) for f in handle.read().strip().split(' ')]
+	output = []
+	ys = []
+	for _ in xrange(0, size):
+		ix = random.randrange(0, len(genome)-length)
+		x = []
+		for i in xrange(ix, ix+length):
+			ns = ['A', 'C', 'T', 'G']
+			d = {'A': 0, 'C': 0, 'G': 0, 'T': 0}
+			n, p = genome[i], probs[i]
+			for t in ns:
+				if t == n:
+					d[t] = p
+				else:
+					d[t] = (1.-p)/3.
+			x.append(np.random.choice(d.keys(), p=d.values()))
+		output.append(''.join(x)+','+str(ix))
+	with open('test.txt', 'w') as handle:
+		handle.write('\n'.join(output))
+
+
+
+
+
+
 
 def score(S,Ps,T):
 	"""
