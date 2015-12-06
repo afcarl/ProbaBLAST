@@ -33,10 +33,6 @@ def create_test_set(size=1000, length=100):
 
 
 
-
-
-
-
 def score(S,Ps,T):
 	"""
 	Calculates alignment score of sequence S and T with respect to probabilities for S 
