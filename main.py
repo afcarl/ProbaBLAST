@@ -80,12 +80,18 @@ def ungapped_extension(query, match, threshold, delta=10):
 		return None
 
 def gapped_extension():
+	# TODO: Need to write NW algorithm.
 	pass
+
 
 if __name__ == '__main__':
 	index = load_index('Data/max_likelihood.pkl')
 	# First we load the test sets.
-	with open('test.txt', 'r') as handle:
+	# TODO: Try test lengths of various sizes.
+	
+	with open('test_25.txt', 'r') as handle:
+		recs = []
+		precs = []
 		for entry in handle.xreadlines():
 			query, correct_ix = entry.strip().split(',')
 			correct_ix = int(correct_ix)
@@ -101,10 +107,31 @@ if __name__ == '__main__':
 				if not new_seed is None and new_seed not in extended_seeds:
 					extended_seeds.add(new_seed)
 			for seed in extended_seeds:
+				print seed
+				# TODO: Call the gapped extension phase.
 				pass
+			found = False
+			p_count, p_total = 0. , 0.
+			for match in extended_seeds:
+				if correct_ix >= match.genome_ix and correct_ix <= match.genome_ix + match.length:
+					p_count += 1.
+					found = True
+				p_total += 1.
+			if found == True:
+				recs.append(1.)
+			else:
+				recs.append(0.)
+			precs.append(p_count/p_total)
+			print 'P: ', precs
+			print 'R: ', recs
+				
 
 
-			break
+			
+
+	# TODO: Calculate precision/recall. Get ROC curves.
+	# Precision is how often the match is actually where it was generated from.
+	# Recall is how many matches we correctly identify. 
 
 
 
