@@ -1,8 +1,9 @@
 %Report for ProbaBLAST
-\documentclass[12pt]{article}%{IEEEtran}
+\documentclass[12pt]{article}%
+%\documentclass[12pt]{IEEEtran}
 \usepackage{setspace}
-\singlespacing
-\usepackage[margin=1.9cm]{geometry}
+\onehalfspacing
+\usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath}
 \usepackage{cite}
 \usepackage{amsfonts}
@@ -46,13 +47,13 @@ We first decided to investigate two different ways to build an index of the geno
 The first method is based on maximum likelihood estimates: for each position in the genome, we pick the nucleotide with highest probability. This approach is simple and sound, but we thought it might be too forgiving to cases where the probabilities associated with a series of nucleotides is low.
 This is why we decided to create a second type of index. For a given string $x=x_1,\dots,x_n$ in the genome, we index it in the database only if 
 $$P(x)=\prod_{i=1}^{n}P(x_i)\geq t^w$$
-where $P(x_i)$ is the probability associated with nucleotide at position $i$  and $t$ is a threshold value. Intuitively, we only allow strings of nucleotides for which the average probability is above $t$. We chose threshold values of $0.9$, $0.925$, $0.95$ and $0.975$. They are based on the genome we are testing ProbaBLAST on, i.e. when the index started to differ from the maximum likelihood version of the index.
+where $P(x_i)$ is the probability associated with nucleotide at position $i$  and $t$ is a threshold value. Intuitively, we only allow strings of nucleotides for which the average probability is above $t$. We chose threshold values of $0.925$, $0.95$ and $0.975$. They are based on the genome we are testing ProbaBLAST on, i.e. when the index started to differ from the maximum likelihood version of the index.
 
 \subsection{A new scoring scheme}
 
-We also had to modify the scoring scheme used in BLAST. Indeed, if a sequence taken from the genome has a relatively low probability, we should be more skeptical of matches and mismatches. On the other hand, a gap is almost equally significant in both high and low probability sequences. **Explain more**
+We also had to modify the scoring scheme used in BLAST. Indeed, if a sequence taken from the genome has a relatively low probability, we should be more skeptical of matches and mismatches. On the other hand, a gap is almost equally significant in both high and low probability sequences: if there is a difference between the true and observed nucleotides at one or two consecutive positions, then it is much more likely that the optimal alignment we will put a mismatch than a gap at this position.
 
-Under the defaults values: mismatch$= -1$, match$= 2$ and $gap = -2$, we have the following updated scoring function:
+Under the defaults values: $\text{mismatch}= -1$, $\text{match}= 2$ and $\text{gap} = -2$, we have the following updated scoring function:
 
 \begin{algorithm}
   \caption{Alignment score between two sequences
@@ -81,13 +82,25 @@ Under the defaults values: mismatch$= -1$, match$= 2$ and $gap = -2$, we have th
 \subsection{Putting it all together: ProbaBLAST}
 
 The remaining of the algorithm follows the BLAST implementation: we build an index $D$ and for each new query $Q$, we store every perfect match of length $w$ between $Q$ and $D$. These are called the \emph{seeds} and constitute the basis aligning substrings of $Q$ and $D$. Then follows an ungapped extension phase, where we match nucleotides on the edge of the seed until we get a score below a fixed threshold $T$. 
-The last part of ProbaBLAST is a gapped extension phase, which is similar to the ungapped extension phase except for the fact that we allow gaps and that we only return the alignment that has the highest score.
+The last part of ProbaBLAST is a gapped extension phase, which is similar to the ungapped extension phase except for the fact that we allow gaps and that we only keep the alignment that has the highest score. 
+
+*** Mike: update this if necessary ***
+
+\subsubsection{Choice of parameters}
+
+We decided to play with different values of $T$ to see which one would generate the best results. Indeed, choosing a threshold value that is too high will result in too short matches, but a threshold that is too low could align the wrong nucleotides together.
+For $w$, the length of the seed, we decided to go with $11$ as suggested in class, and is the default value in the standard nucleotide BLAST\footnote{BLAST FAQ: http://www.ncbi.nlm.nih.gov/blast/Why.shtml}.
 
 
 ***Mike, check that this is correct! You can also write an algorithm***
 
 \subsection{Model evaluation}
 
+Evaluating ProbaBLAST's performance is perhaps the trickiest part of this project, as there is no "ground truth" to compare our results with. We opted for generating queries based on the probability distribution of the genome and added a few random indels and/or substitutions. We generated many such queries, which we used as input to ProbaBLAST.
+
+We suspected that strings of different lengths would perform differently on the test set. We chose values of 25, 50, and 100 nucleotides for the queries. 
+
+Finally, in order to test our approach, we only considered the highest scoring alignment between each query and the index, as we wish to know if the match occurs at the position the query was generated from.
 
 
 ***Mike you can elaborate here***
@@ -98,6 +111,11 @@ The last part of ProbaBLAST is a gapped extension phase, which is similar to the
 
 \section{Discussion}
 
+\subsection{Choice of index}
+
+\subsection{Selecting the best threshold values}
+
+\subsection{Length of test strings}
 
 
 \begin{thebibliography}{9}
@@ -109,8 +127,9 @@ Journal of Molecular Biology 215(3), 403–410 (1990).
 
 \bibitem{blast2}
 Ma J., Zhang L.
-emph{Modern BLAST Programs}
+\emph{Modern BLAST Programs}
 Problem Solving Handbook for Comput Biol. and Bioinformatics, pp.3-19, Springer, 2010.
+
 
 \end{thebibliography}
 
