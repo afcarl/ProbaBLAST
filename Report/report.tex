@@ -1,1 +1,117 @@
 %Report for ProbaBLAST
+\documentclass[12pt]{article}%{IEEEtran}
+\usepackage{setspace}
+\singlespacing
+\usepackage[margin=1.9cm]{geometry}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsfonts}
+\usepackage{mathptmx}
+\usepackage{algpseudocode,algorithm,algorithmicx}
+\newcommand*\Let[2]{\State #1 $\gets$ #2}
+\algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
+
+\begin{document}
+
+\title{ProbaBLAST: a Probabilistic Approach to Sequence Alignment}
+\author{Michael Noseworthy, Pascale Gourdeau}
+\date{}
+\maketitle
+
+\section{Introduction}
+
+The local sequence alignment problem seems simple: given a sequence query $Q$ and a database sequence $D$, how can we align substrings of $Q$ with substrings in $D$? Moreover, given a certain \emph{scoring scheme}, which pair of substrings achieves the best score? We usually wish to compare a somewhat short sequence of nucleotides against a whole genome. Natually, the two sequences differ in size by many orders of magnitude, and the Smith-Waterman algorithm, which finds an optimal solution, is extremely computationally expensive. 
+
+One of the most well-known and commonly used algorithm in bioinformatics, the Basic Local Alignment Search Tool (BLAST), while not guaranteeing an optimal solution to the local sequence alignment problem, reduces immensely computational time compared to the Smith-Waterman algorithm, while still giving perfectly reasonable answers. It was originally presented in \cite{originalBLAST} and has been improved many times over the years \cite{blast2}. Moreover, different versions of the algorithm have been developed to better respond to specific problems surrounding sequence alignment. 
+
+It is however not always possible to work with a genome for which we know the nucleotides at all positions with certainty. Indeed, it is possible that the genome assembly gave ambigous results at certain positions. Moreover, computationally inferring ancestral sequences, an active branch of research in computational biology, inherently deals with uncertainty. From these two issues arises a probabilistic version of the genome, which is represented as probability matrix with 4 rows, one for each nucleotide, and $L$ columns, where $L$ is the length of the genome. In this case, we cannot use the BLAST algorithm to find local alignments between a deterministic query sequence and a probabilistic database.
+
+This report presents our approach to the problem of probabilistic sequence alignment. 
+We first introduce ProbaBLAST, an analog of the BLAST algorithm. We then present and evaluate our algorithm's performance and suggest ways in which to improve it.
+
+
+\section{Methodology}
+
+There are two heuristics at the basis of the BLAST algorithm:
+\begin{enumerate}
+\item Most high scoring local alignments contain a high scoring \emph{gapless} subalignment.
+\item Most high scoring pairs contain a perfect match of a certain length $w$
+\end{enumerate}
+These heuristics still hold for our probabilistic version of the sequence alignment problem, and so our algorithm is largely inspired from BLAST. Our modifications include: (i) two possible ways of building an index, and (ii) a modified scoring scheme. There is also a need to create a different methodology to evaluate ProbaBLAST, which is presented in the last subsection.
+
+\subsection{Building indices}
+
+We first decided to investigate two different ways to build an index of the genome. This index has $4^w$ entries, each corresponding to a string of nucleotides of lentgh $w$ and their positions in the genome.
+
+The first method is based on maximum likelihood estimates: for each position in the genome, we pick the nucleotide with highest probability. This approach is simple and sound, but we thought it might be too forgiving to cases where the probabilities associated with a series of nucleotides is low.
+This is why we decided to create a second type of index. For a given string $x=x_1,\dots,x_n$ in the genome, we index it in the database only if 
+$$P(x)=\prod_{i=1}^{n}P(x_i)\geq t^w$$
+where $P(x_i)$ is the probability associated with nucleotide at position $i$  and $t$ is a threshold value. Intuitively, we only allow strings of nucleotides for which the average probability is above $t$. We chose threshold values of $0.9$, $0.925$, $0.95$ and $0.975$. They are based on the genome we are testing ProbaBLAST on, i.e. when the index started to differ from the maximum likelihood version of the index.
+
+\subsection{A new scoring scheme}
+
+We also had to modify the scoring scheme used in BLAST. Indeed, if a sequence taken from the genome has a relatively low probability, we should be more skeptical of matches and mismatches. On the other hand, a gap is almost equally significant in both high and low probability sequences. **Explain more**
+
+Under the defaults values: mismatch$= -1$, match$= 2$ and $gap = -2$, we have the following updated scoring function:
+
+\begin{algorithm}
+  \caption{Alignment score between two sequences
+    \label{alg:score}}
+  \begin{algorithmic}[1]
+ \Require{$S$ and $T$ have the same length. $S$ is probabilitistic, $T$ is deterministic}
+    \Statex
+    \Function{Score}{$T, S$}
+      \Let{$\text{score}$}{$0$}
+      \For{$i \gets 1 \textrm{ to } \text{length}(T)$}
+        \If{$s_i = t_i$}
+          	\Let{$\text{score}$}{$\text{score} + 2\cdot P(s_i)$}
+	\ElsIf{$s_i=\text{gap}$ \textbf{or}  $t_i=\text{gap}$}
+		\Let{$\text{score}$}{$\text{score} - 2$}
+	\Else 
+		\Let{$\text{score}$}{$\text{score} - P(s_i)$}
+        \EndIf
+      \EndFor
+      \State \Return{$\text{score}$}
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+
+
+\subsection{Putting it all together: ProbaBLAST}
+
+The remaining of the algorithm follows the BLAST implementation: we build an index $D$ and for each new query $Q$, we store every perfect match of length $w$ between $Q$ and $D$. These are called the \emph{seeds} and constitute the basis aligning substrings of $Q$ and $D$. Then follows an ungapped extension phase, where we match nucleotides on the edge of the seed until we get a score below a fixed threshold $T$. 
+The last part of ProbaBLAST is a gapped extension phase, which is similar to the ungapped extension phase except for the fact that we allow gaps and that we only return the alignment that has the highest score.
+
+
+***Mike, check that this is correct! You can also write an algorithm***
+
+\subsection{Model evaluation}
+
+
+
+***Mike you can elaborate here***
+
+\section{Results}
+
+
+
+\section{Discussion}
+
+
+
+\begin{thebibliography}{9}
+
+\bibitem{originalBLAST}
+Altschul, S.F., Gish, W., Miller, W., Myers, E.W., Lipman, D.J. 
+\emph{Basic local alignment search tool. }
+Journal of Molecular Biology 215(3), 403–410 (1990).
+
+\bibitem{blast2}
+Ma J., Zhang L.
+emph{Modern BLAST Programs}
+Problem Solving Handbook for Comput Biol. and Bioinformatics, pp.3-19, Springer, 2010.
+
+\end{thebibliography}
+
+\end{document}
