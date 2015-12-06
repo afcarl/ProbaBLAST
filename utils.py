@@ -7,11 +7,19 @@ match = 2
 gap = -2
 
 #----- Methods ------#
-def create_test_set(size=1000, length=100):
+def get_genome_and_probs():
 	with open('Data/genome.txt', 'r') as handle:
 		genome = list(handle.read().strip())
 	with open('Data/probabilities.txt', 'r') as handle:
 		probs = [float(f) for f in handle.read().strip().split(' ')]
+	return genome, probs
+
+def create_test_set(size=10000, length=100):
+	'''
+	Creates a test test of size sequences of length length. These are 
+	created by sampling repeatedly from the given genome.
+	'''
+	genome, probs = get_genome_and_probs()
 	output = []
 	ys = []
 	for _ in xrange(0, size):
@@ -30,12 +38,6 @@ def create_test_set(size=1000, length=100):
 		output.append(''.join(x)+','+str(ix))
 	with open('test.txt', 'w') as handle:
 		handle.write('\n'.join(output))
-
-
-
-
-
-
 
 def score(S,Ps,T):
 	"""
@@ -63,9 +65,7 @@ def score(S,Ps,T):
 		elif s=='-' or t=='-':
 			score += gap 
 		else:
-			score += mismatch*p 
-
+			score += mismatch*p
 	return score
-
 
 
