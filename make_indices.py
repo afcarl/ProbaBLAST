@@ -3,7 +3,7 @@ import itertools
 import numpy as np 
 import cPickle as pickle 
 
-thresholds = [0.9,0.925,0.95,0.975]
+thresholds = [0.925,0.95,0.975]
 data_dir = './Data/'
 prob_fname = data_dir+'probabilities.txt'
 genome_fname = data_dir+'genome.txt'
