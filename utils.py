@@ -81,3 +81,46 @@ def score(S,Ps,T):
 	return score
 
 
+def make_convex(fpr, tpr):
+	init_len = len(fpr)
+	fpr_new = []
+	tpr_new = []
+	
+	for i in range(init_len):
+		if i == 0 or i == init_len-1:
+			fpr_new.append(fpr[i])
+			tpr_new.append(tpr[i])
+		else:
+			x_prev = fpr[i-1]
+			y_prev = tpr[i-1]
+			x = fpr[i]
+			y = tpr[i]
+			x_next = fpr[i+1]
+			y_next = tpr[i+1]
+			if x_prev == x and y_prev < y:
+				fpr_new.append(fpr[i])
+				tpr_new.append(tpr[i])
+				continue
+			elif x == x_next and x_next < x:
+				fpr_new.append(fpr[i])
+				tpr_new.append(tpr[i])
+				continue
+			# params y = ax + b
+			a = (y_next-y_prev)/(x_next-x_prev)
+			b = y_next - a * x_next
+			y_on_line = a*x + b
+			if y_on_line < y:
+				fpr_new.append(fpr[i])
+				tpr_new.append(tpr[i])
+
+	if init_len > len(fpr_new):
+		fpr_new, tpr_new = make_convex(fpr_new,tpr_new)
+
+	return fpr_new, tpr_new
+
+def remove_duplicates(rates):
+
+	rates.sort()
+	return list(rates for rates,_ in itertools.groupby(rates))
+
+
