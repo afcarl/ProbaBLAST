@@ -14,7 +14,7 @@ def get_genome_and_probs():
 		probs = [float(f) for f in handle.read().strip().split(' ')]
 	return genome, probs
 
-def create_test_set(size=1000, length=25, sub_rate=0.01, ins_rate=0.01, del_rate=0.01):
+def create_test_set(size=1000, length=25, sub_rate=0.003, ins_rate=0.003, del_rate=0.003):
 	'''
 	Creates a test test of size sequences of length length. These are 
 	created by sampling repeatedly from the given genome.

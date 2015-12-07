@@ -113,14 +113,40 @@ Ideally we want an algorithm with both high precision and recall. High recall me
 Note that this method has an inherent flaw. We assume that the gold standard is only possible place where the test sequence could have been generated from. But it very well could have been generated from somewhere else on the sequence. However, with longer sequences this should be less of a problem.
 
 \section{Results}
- 
+
+*** TODO: Include tables with a brief descriptions here. ***
+
+We present the precision and recall for changing $T$ using various indexing schemes and test sequence lengths. Evaluation proceeded as described above.
+
+\begin{figure*}
+    \centering
+    \includegraphics[scale=0.4]{dists}
+    \caption{Scores of matches for a chosen test sequence of length 50 and their locations in the probabilistic genome. The gold standard shows where this sequence was actually generated from.}
+    \label{dists}
+\end{figure*}
+
+Figure \ref{dists} shows how changing the threshold affects the number of matches we return for a single test example. We can see that all thresholds are able to detect the match where the query sequence was generated from. However, lower thresholds return many more sequences with lower scores as well.
+
 \section{Discussion}
 
 \subsection{Choice of index}
+*** TODO: Pascale can you describe this part? ***
 
 \subsection{Selecting the best threshold values}
 
-\subsection{Length of test strings}
+We experimented with various threshold sizes. Namely for each possible test string length, we considered thresholds of various fractions of the test string length ($\frac{1}{4}$, $\frac{1}{2}$, $\frac{3}{4}$, and $1$). We considered fractions so the number of matches wouldn't be as biased by the test string length. For example, a query string of length 25 wouldnt not have any ungapped matched of size 50. More dependencies on the size of the test sequence will be discussed in the next subsection.
+
+*** TODO: Mike will draw conclusions from the tables. ***
+
+\subsection{Length of test sequences}
+*** TODO: Need to discuss the following points. ***
+1) Seed size of length 11 makes detecting matches in smaller sequences more difficult.
+2) Larger sequences usually have better performance as they are less likely to occur by random elsewhere in the genome.
+
+\subsection{Mutations}
+*** TODO: Discuss the following points. ***
+1) Substitutions are handled well since the can be seen as a mismatch (nucleotide with different prob).
+2) Indels are harder to correct for and we describe a method to handle this in future work. Lower thresholds should be able to account for this (at the expense of adding new matches).
 
 \section{Future Work}
 
@@ -137,7 +163,7 @@ Before discussing this claim in detail, it is useful to first consider what an i
 
 Now instead of aligning a sequence to another sequence, we are aligning a deterministic sequence to a probabilistic sequence. Another way to phrase this is \"using the given scoring scheme, find the alignment that is most likely to have generated the query sequence.\" Let us consider the Needleman-Wunsch algorithm and provide an interpretation that holds for this problem. Figure \ref{NW} shows both the equation and visualization of the matrix. On one dimension we have the nucleotides forming $Q$, and along the other we have positions of $P$. 
 
-***TODO: Make NW Figure ***
+***TODO: Mike will make a NW Figure ***
 
 When we calculate scores we can interpret each part of the equations as follows:
 
