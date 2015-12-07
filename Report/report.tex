@@ -25,11 +25,11 @@
 
 \section{Introduction}
 
-The local sequence alignment problem seems simple at first sight: given a sequence query $Q$ and a database sequence $D$, how can we align substrings of $Q$ with substrings in $D$? Moreover, given a certain \emph{scoring scheme}, which pair of substrings achieves the best score? We usually wish to compare a somewhat short sequence of nucleotides against a whole genome. Natually, the two sequences differ in size by many orders of magnitude, and the Smith-Waterman algorithm, which finds an optimal solution, is extremely computationally expensive. 
+The local sequence alignment problem seems simple at first sight: given a sequence query $Q$ and a database sequence $D$, how can we align subsequences of $Q$ with subsequences in $D$? Moreover, given a certain \emph{scoring scheme}, which pair of substrings achieves the best score? We usually wish to compare a somewhat short sequence of nucleotides against a whole genome. Naturally, the two sequences differ in size by many orders of magnitude, and the Smith-Waterman algorithm, which finds an optimal solution, is extremely computationally expensive. 
 
 One of the most well-known and commonly used algorithm in bioinformatics, the Basic Local Alignment Search Tool (BLAST), while not guaranteeing an optimal solution to the local sequence alignment problem, reduces immensely computational time compared to the Smith-Waterman algorithm, while still giving perfectly reasonable answers. It was originally presented in \cite{originalBLAST} and has been improved many times over the years \cite{blast2}. Moreover, different versions of the algorithm have been developed to better respond to specific problems surrounding sequence alignment. 
 
-It is however not always possible to work with a genome for which we know the nucleotides at all positions with certainty. Indeed, it is possible that the genome assembly gave ambigous results at certain positions. Moreover, computationally inferring ancestral sequences, an active branch of research in computational biology, inherently deals with uncertainty. From these two issues arises a probabilistic version of the genome, which is represented as probability matrix with 4 rows, one for each nucleotide, and $L$ columns, where $L$ is the length of the genome. In this case, we cannot use the BLAST algorithm to find local alignments between a deterministic query sequence and a probabilistic database.
+It is however not always possible to work with a genome for which we know the nucleotides at all positions with certainty. Indeed, it is possible that the genome assembly gave ambiguous results at certain positions. Moreover, computationally inferring ancestral sequences, an active branch of research in computational biology, inherently deals with uncertainty. From these two issues arises a probabilistic version of the genome, which is represented as probability matrix with 4 rows, one for each nucleotide, and $L$ columns, where $L$ is the length of the genome. In this case, we cannot use the BLAST algorithm to find local alignments between a deterministic query sequence and a probabilistic database.
 
 This report presents our approach to the problem of probabilistic sequence alignment. 
 We first introduce ProbaBLAST, an analog of the BLAST algorithm. We then present and evaluate our algorithm's performance and suggest ways in which to improve it.
@@ -39,14 +39,14 @@ We first introduce ProbaBLAST, an analog of the BLAST algorithm. We then present
 
 There are two heuristics at the basis of the BLAST algorithm:
 \begin{enumerate}
-\item Most high scoring local alignments contain a high scoring \emph{gapless} subalignment.
+\item Most high scoring local alignments contain a high scoring \emph{gapless} sub-alignment.
 \item Most high scoring pairs contain a perfect match of a certain length $w$
 \end{enumerate}
 These heuristics still hold for our probabilistic version of the sequence alignment problem, and so our algorithm is largely inspired from BLAST. Our modifications include: (i) two possible ways of building an index, and (ii) a modified scoring scheme. If we were to input to ProbaBLAST a deterministic sequence (i.e. a sequence where all the probability mass is assigned to a single nucleotide at each position), we would indeed have the original BLAST algorithm. There is also a need to create a different methodology to evaluate ProbaBLAST, which is presented in the last subsection.
 
 \subsection{Building indices}
 
-We first decided to investigate two different ways to build an index of the genome. This index has $4^w$ entries, each corresponding to a string of nucleotides of lentgh $w$ and their positions in the genome.
+We first decided to investigate two different ways to build an index of the genome. This index has $4^w$ entries, each corresponding to a string of nucleotides of length $w$ and their positions in the genome.
 
 The first method is based on maximum likelihood estimates: for each position in the genome, we pick the nucleotide with highest probability. This approach is simple and sound, but we thought it might be too forgiving to cases where the probabilities associated with a series of nucleotides is low.
 This is why we decided to create a second type of index. For a given string $x=x_1\dots x_n$ in the genome, we index it in the database only if 
@@ -63,17 +63,17 @@ Under the defaults values: $\text{mismatch}= -1$, $\text{match}= 2$ and $\text{g
   \caption{Alignment score between two sequences
     \label{alg:score}}
   \begin{algorithmic}[1]
- \Require{$S$ and $T$ have the same length. $S$ is probabilitistic, $T$ is deterministic}
+ \Require{$S$ and $T$ have the same length. $S$ is probabilistic, $T$ is deterministic}
     \Statex
     \Function{Score}{$T, S$}
       \Let{$\text{score}$}{$0$}
       \For{$i \gets 1 \textrm{ to } \text{length}(T)$}
         \If{$s_i = t_i$}
-          	\Let{$\text{score}$}{$\text{score} + 2\cdot P(s_i)$}
-	\ElsIf{$s_i=\text{gap}$ \textbf{or}  $t_i=\text{gap}$}
-		\Let{$\text{score}$}{$\text{score} - 2$}
-	\Else 
-		\Let{$\text{score}$}{$\text{score} - P(s_i)$}
+            \Let{$\text{score}$}{$\text{score} + 2\cdot P(s_i)$}
+  \ElsIf{$s_i=\text{gap}$ \textbf{or}  $t_i=\text{gap}$}
+    \Let{$\text{score}$}{$\text{score} - 2$}
+  \Else 
+    \Let{$\text{score}$}{$\text{score} - P(s_i)$}
         \EndIf
       \EndFor
       \State \Return{$\text{score}$}
@@ -113,7 +113,7 @@ When we calculate scores we can interpret each part of the equations as follows:
 The scoring scheme specifies that gaps should be allowed if it increases the likelihood of $Q$ by changing the positions nucleotides originated from.
 
 
-We return the ungapped alignments as our matches. Note that multiple alignments may be returned and changing $w$ and $T$ will alter the sensitivity of ProbaBLAST similarily to how they do in BLAST.
+We return the ungapped alignments as our matches. Note that multiple alignments may be returned and changing $w$ and $T$ will alter the sensitivity of ProbaBLAST similarly to how they do in BLAST.
 
 
 \subsubsection{Choice of parameters}
@@ -199,11 +199,6 @@ Note that this method has an inherent flaw. We assume that the gold standard is 
 \end{tabular}
 \end{table*}
 
-
-
-
-*** TODO: Include tables with a brief descriptions here. ***
-
 We present the precision and recall for changing $T$ using various indexing schemes and test sequence lengths. Evaluation proceeded as described above.
 
 \begin{figure*}
@@ -222,7 +217,7 @@ Figure \ref{dists} shows how changing the threshold affects the number of matche
 
 \subsection{Choice of index}
 
-As we can see in the tables \ref{ml}, \ref{t925}, \ref{t95} and \ref{t975}, the maximum likelihood index consistently outperforms the index with thesholds. It also turns out that the higher the threshold $t$, the weaker the performance gets. We suspect that high thesholds make it less likely that the index where the query was generated will become a seed during ProbaBLAST. 
+As we can see in the tables \ref{ml}, \ref{t925}, \ref{t95} and \ref{t975}, the maximum likelihood index consistently outperforms the index with thresholds. It also turns out that the higher the threshold $t$, the weaker the performance gets. We suspect that high thresholds make it less likely that the index where the query was generated will become a seed during ProbaBLAST. 
 
 \subsection{Selecting the best threshold values}
 
