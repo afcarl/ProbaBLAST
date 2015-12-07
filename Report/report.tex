@@ -4,7 +4,7 @@
 \usepackage{setspace}
 %\onehalfspacing
 \singlespacing
-\usepackage[margin=2.5cm]{geometry}
+\usepackage[margin=2.3cm]{geometry}
 \usepackage{amsmath}
 \usepackage{cite}
 \usepackage{amsfonts}
@@ -87,7 +87,7 @@ The remaining of the algorithm follows the BLAST implementation: we build an ind
 
 Choosing $T$ is important as it can change the sensitivity of the algorithm: lower $T$ values will be more forgiving as the sequences differ more and thus create more matches.
 
-The last part of ProbaBLAST is a gapped extension phase, where we allow our previously ungapped alignments to now include gaps. We have have a slightly different question than in BLAST but we claim that the Needleman-Wunsh algorithm can still be used to find the optimal alignment under a given scoring scheme - in this case our probabilistic scheme.
+For now, we don't consider the gapped extension phase. We do this for two reasons. Firstly, as seen in the results section, we achieve respectable performance with just the ungapped extensions. Secondly, by not including this phase, we can better analyze the effects of the parameters on our the ungapped phase to provide a more in depth discussion.
 
 \begin{figure*}
     \centering
@@ -112,7 +112,9 @@ When we calculate scores we can interpret each part of the equations as follows:
 
 The scoring scheme specifies that gaps should be allowed if it increases the likelihood of $Q$ by changing the positions nucleotides originated from.
 
-We then return the gapped alignments as our matches. Note that multiple alignments may be returned and changing $w$ and $T$ will alter the sensitivity of ProbaBLAST similarily to how they do in BLAST.
+
+We return the ungapped alignments as our matches. Note that multiple alignments may be returned and changing $w$ and $T$ will alter the sensitivity of ProbaBLAST similarily to how they do in BLAST.
+
 
 \subsubsection{Choice of parameters}
 
@@ -121,7 +123,7 @@ For $w$, the length of the seed, we decided to go with $11$ as suggested in clas
 
 \subsection{Model evaluation}
 
-Evaluating ProbaBLAST's performance is perhaps the trickiest part of this project, as there is no \"ground truth\" to compare our results with. We opted for generating queries based on the probability distribution of the genome and added a few random indels and/or substitutions (each mutation type had a rate of 1\% to ensure they appeared). We generated many such queries, which we used as input to ProbaBLAST.
+Evaluating ProbaBLAST's performance is perhaps the trickiest part of this project, as there is no \"ground truth\" to compare our results with. We opted for generating queries based on the probability distribution of the genome and added a few random indels and/or substitutions (mutation rate of 1\% was used). We generated many such queries, which we used as input to ProbaBLAST.
 
 We suspected that query sequences of different lengths would perform differently using ProbaBLAST. We chose values of 25, 50, and 100 nucleotides for the queries. 
 
@@ -130,8 +132,8 @@ For each test query, we know that actual index it was generated from and use as 
 Using this method, there are two evaluation metrics we are interested in:
 
 \begin{enumerate}
-\item \emph{Precision} tells us the fraction of matches that match the gold standard.
-\item \emph{Recall} tells us the fraction of test queries that were returned by ProbaBLAST.
+\item \emph{Precision} tells us the fraction of matches that match the gold standard. It is defined as $\frac{TP}{TP+FP}$.
+\item \emph{Recall} tells us the fraction of test queries that were returned by ProbaBLAST. It is defined as $\frac{TP}{TP+FN}$.
 \end{enumerate}
 
 Ideally we want an algorithm with both high precision and recall. High recall means we return the correct sequence (but may return incorrect sequences as well). It easy easy to game this metric by predicting all possible alignments. Thus we need to balance recall with precision: a high precision means that we only returned matches that met the gold standard.
@@ -139,42 +141,119 @@ Ideally we want an algorithm with both high precision and recall. High recall me
 Note that this method has an inherent flaw. We assume that the gold standard is only possible place where the test sequence could have been generated from. But it very well could have been generated from somewhere else on the sequence. However, with longer sequences this should be less of a problem.
 
 \section{Results}
- 
-
 
 \begin{table*}[]
 \centering
-\caption{Precision and Recall for \textbf{Maximum Likelihood Index}}
-\label{my-label}
+\caption{Precision / Recall for \textbf{Maximum Likelihood Index}}
+\label{ml}
 \begin{tabular}{ll|llll}
 \cline{3-6}
                                                        &              & \multicolumn{4}{l|}{\textbf{Threshold (as fraction of test query size)}}                                                                          \\ \cline{3-6} 
 \textbf{}                                              &              & \multicolumn{1}{l|}{\textbf{0.25}} & \multicolumn{1}{l|}{\textbf{0.50}} & \multicolumn{1}{l|}{\textbf{0.75}} & \multicolumn{1}{l|}{\textbf{1.00}} \\ \hline
 \multicolumn{1}{|l|}{\multirow{3}{*}{\textbf{Test Query Size}}} & \textbf{25}  & 0.23 / 0.80                         & 0.26 / 0.80                         & 0.43 / 0.80                        & 0.64 / 0.79                        \\ \cline{2-2}
 \multicolumn{1}{|l|}{}                                 & \textbf{50}  & 0.18 / 0.89                        & 0.57 / 0.88                         & 0.78 / 0.86                         & 0.79 / 0.82                        \\ \cline{2-2}
-\multicolumn{1}{|l|}{}                                 & \textbf{100} & 0.51 / \textbf{0.93}                          & 0.79 / 0.90                       & \textbf{0.81} / 0.85                         & 0.78 / 0.79                          \\ \cline{1-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{100} & 0.51 / \textbf{0.93}                          & \emph{0.79 / 0.90}                      & \textbf{0.81} / 0.85                         & 0.78 / 0.79                          \\ \cline{1-2}
 \end{tabular}
 \end{table*}
 
-As seen in Fig \ref{dists}
+\begin{table*}[]
+\centering
+\caption{Precision / Recall for \textbf{Threshold of 0.925}}
+\label{t925}
+\begin{tabular}{ll|llll}
+\cline{3-6}
+                                                       &              & \multicolumn{4}{l|}{\textbf{Threshold (as fraction of test query size)}}                                                                          \\ \cline{3-6} 
+\textbf{}                                              &              & \multicolumn{1}{l|}{\textbf{0.25}} & \multicolumn{1}{l|}{\textbf{0.50}} & \multicolumn{1}{l|}{\textbf{0.75}} & \multicolumn{1}{l|}{\textbf{1.00}} \\ \hline
+\multicolumn{1}{|l|}{\multirow{3}{*}{\textbf{Test Query Size}}} & \textbf{25}  & 0.28 / 0.70                         & 0.30 / 0.70                         & 0.42 / 0.70                        & 0.58 / 0.69                        \\ \cline{2-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{50}  & 0.23 / 0.82                        & 0.58 / 0.81                         & 0.74 / 0.79                         & 0.74 / 0.76                        \\ \cline{2-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{100} & 0.56 / \textbf{0.89}                          & \emph{0.77 / 0.86}                    & \textbf{0.78} / 0.82                         & 0.75 / 0.76                          \\ \cline{1-2}
+\end{tabular}
+\end{table*}
+
+\begin{table*}[]
+\centering
+\caption{Precision / Recall for \textbf{Threshold of 0.95}}
+\label{t95}
+\begin{tabular}{ll|llll}
+\cline{3-6}
+                                                       &              & \multicolumn{4}{l|}{\textbf{Threshold (as fraction of test query size)}}                                                                          \\ \cline{3-6} 
+\textbf{}                                              &              & \multicolumn{1}{l|}{\textbf{0.25}} & \multicolumn{1}{l|}{\textbf{0.50}} & \multicolumn{1}{l|}{\textbf{0.75}} & \multicolumn{1}{l|}{\textbf{1.00}} \\ \hline
+\multicolumn{1}{|l|}{\multirow{3}{*}{\textbf{Test Query Size}}} & \textbf{25}  & 0.29 / 0.62                        & 0.31 / 0.62                         & 0.41/ 0.62                       & 0.53 / 0.61                       \\ \cline{2-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{50}  & 0.27 / 0.77                        & 0.57 / 0.76                         & 0.69 / 0.74                         & 0.69 / 0.71                        \\ \cline{2-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{100} & 0.59 / \textbf{0.87}                          & \emph{0.76 / 0.85}                    & \textbf{0.77} / 0.81                         & 0.74 / 0.75                         \\ \cline{1-2}
+\end{tabular}
+\end{table*}
+
+
+\begin{table*}[]
+\centering
+\caption{Precision / Recall for \textbf{Threshold of 0.975}}
+\label{t975}
+\begin{tabular}{ll|llll}
+\cline{3-6}
+                                                       &              & \multicolumn{4}{l|}{\textbf{Threshold (as fraction of test query size)}}                                                                          \\ \cline{3-6} 
+\textbf{}                                              &              & \multicolumn{1}{l|}{\textbf{0.25}} & \multicolumn{1}{l|}{\textbf{0.50}} & \multicolumn{1}{l|}{\textbf{0.75}} & \multicolumn{1}{l|}{\textbf{1.00}} \\ \hline
+\multicolumn{1}{|l|}{\multirow{3}{*}{\textbf{Test Query Size}}} & \textbf{25}  & 0.27 / 0.47                        & 0.28 / 0.47                         & 0.36/ 0.47                       & 0.42 / 0.47                      \\ \cline{2-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{50}  & 0.29 / 0.64                        & 0.52 / 0.63                         & 0.58 / 0.62                         & 0.58 / 0.60                        \\ \cline{2-2}
+\multicolumn{1}{|l|}{}                                 & \textbf{100} & 0.58 / \textbf{0.79}                          & \emph{0.69 / 0.73}                    & \textbf{0.70} / 0.73                         & 0.67 / 0.68                        \\ \cline{1-2}
+\end{tabular}
+\end{table*}
+
+
+
+
+*** TODO: Include tables with a brief descriptions here. ***
+
+We present the precision and recall for changing $T$ using various indexing schemes and test sequence lengths. Evaluation proceeded as described above.
+
 \begin{figure*}
     \centering
-    \includegraphics[scale=0.7]{dists}
-    \caption{Score of each alignment between $Q$ and $D$}
+    \includegraphics[scale=0.4]{dists}
+    \caption{Scores of matches for a chosen test sequence of length 50 and their locations in the probabilistic genome. The gold standard shows where this sequence was actually generated from.}
     \label{dists}
 \end{figure*}
+
+Tables \ref{ml}, \ref{t925}, \ref{t95} and \ref{t975} present the precision and recall of each of our method. They are separated by index and show how changing the query string length and ungapped extension phase threshold affects the performance of our algorithm. In bold we can see the maximum precision and recall for each index, while what we evaluate to be the best threshold is in italic.
+
+Figure \ref{dists} shows how changing the threshold affects the number of matches we return for a single test example. We can see that all thresholds are able to detect the match where the query sequence was generated from. However, lower thresholds return many more sequences with lower scores as well.
+
 
 \section{Discussion}
 
 \subsection{Choice of index}
 
+As we can see in the tables \ref{ml}, \ref{t925}, \ref{t95} and \ref{t975}, the maximum likelihood index consistently outperforms the index with thesholds. It also turns out that the higher the threshold $t$, the weaker the performance gets. We suspect that high thesholds make it less likely that the index where the query was generated will become a seed during ProbaBLAST. 
+
 \subsection{Selecting the best threshold values}
 
 
-\subsection{Length of test strings}
+We experimented with various threshold sizes. Namely for each possible test string length, we considered thresholds of various fractions of the test string length ($\frac{1}{4}$, $\frac{1}{2}$, $\frac{3}{4}$, and $1$). We considered fractions so the number of matches wouldn't be as biased by the test string length. For example, a query string of length 25 wouldnt not have any ungapped matched of size 50. More dependencies on the size of the test sequence will be discussed in the next subsection.
+
+*** TODO: Mike will draw conclusions from the tables. ***
+
+\subsection{Length of test sequences}
+As mentioned earlier, we chose the size of the seed to be 11. In every table we can see that the length of the test sequence greatly affects the algorithm's performance. Indeed, the greater the length, the higher the precision and recall. We attribute this result to two facts:
+\begin{enumerate}
+\item The longer the sequence, the higher the chances that it is closer to the true distribution of the genome, making it more likely that there will be an alignment between part of the query and a seed in the site where the query was generated.
+\item More importantly, longer sequences are less likely to randomly occur elsewhere in the genome. We can then distinguish between the true site where the query was generated and the ones that are similar to the true site.
+\end{enumerate}
 
 
+\subsection{Mutations}
+*** TODO: Discuss the following points. ***
+1) Substitutions are handled well since the can be seen as a mismatch (nucleotide with different prob).
+2) Indels are harder to correct for and we describe a method to handle this in future work. Lower thresholds should be able to account for this (at the expense of adding new matches).
 
+\section{Future Work}
+
+As we mentioned before, we did not investigate the gapped extension phase in depth. We now discuss how ProbaBLAST could be modified to allow our previously ungapped alignments to include gaps. We have have a slightly different question than in BLAST but we claim that the Needleman-Wunsh algorithm can still be used to find the optimal alignment under a given scoring scheme - in this case our probabilistic scheme.
+
+\begin{figure*}
+    \centering
+    \includegraphics[scale=0.5]{indel}
+    \caption{Proper alignment between $Q$ and $D$ showing a deletion (a) and an insertion (b).}
+    \label{indel}
+\end{figure*}
 \begin{thebibliography}{9}
 
 \bibitem{originalBLAST}
