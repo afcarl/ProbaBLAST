@@ -12,6 +12,7 @@
 \usepackage{mathptmx}
 \usepackage{algpseudocode,algorithm,algorithmicx}
 \usepackage{multirow}
+\usepackage{hyperref}
 \newcommand*\Let[2]{\State #1 $\gets$ #2}
 \algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
 
@@ -57,7 +58,7 @@ where $P(x_i)$ is the probability associated with nucleotide at position $i$ and
 
 We also had to modify the scoring scheme used in BLAST. Indeed, if a sequence taken from the genome has a relatively low probability, we should be more skeptical of matches and mismatches. On the other hand, a gap is almost equally significant in both high and low probability sequences: if there is a difference between the true and observed nucleotides at one or two consecutive positions, then it is much more likely that the optimal alignment we will put a mismatch than a gap at this position.
 
-Under the defaults values: $\text{mismatch}= -1$, $\text{match}= 2$ and $\text{gap} = -2$, we have the following updated scoring function:
+Under the defaults values: $\text{mismatch}= -1$, $\text{match}= 2$ and $\text{gap} = -2$, we have the scoring scheme described in algorithm \ref{alg:score}.
 
 \begin{algorithm}
   \caption{Alignment score between two sequences
@@ -89,7 +90,7 @@ The structure of the algorithm follows the BLAST implementation: we build an ind
 
 Choosing $T$ is important as it can change the sensitivity of the algorithm: lower $T$ values will be more forgiving as the sequences differ more and thus create more matches.
 
-For now, we don't consider the gapped extension phase. We do this for two reasons. Firstly, as seen in the results section, we achieve respectable performance with just the ungapped extensions. Secondly, by not including this phase, we can better analyze the effects of the parameters on our the ungapped phase to provide a more in depth discussion.
+For now, we don't consider the gapped extension phase. We do this for two reasons. Firstly, as seen in the results section, we achieve respectable performance with just the ungapped extensions. Secondly, by not including this phase, we can better analyze the effects of the parameters on the ungapped phase to provide a more in depth discussion.
 
 We return the ungapped alignments as our matches. Note that multiple alignments may be returned and changing $w$ and $T$ will alter the sensitivity of ProbaBLAST similarly to how they do in BLAST.
 
@@ -100,7 +101,7 @@ For $w$, the length of the seed, we decided to go with $11$ as suggested in clas
 
 \subsection{Model evaluation}
 
-Evaluating ProbaBLAST's performance is perhaps the trickiest part of this project, as there is no \"ground truth\" to compare our results with. We opted for generating queries based on the probability distribution of the genome and added a few random indels and/or substitutions (mutation rate of 1\% was used). We generated many such queries, which we used as input to ProbaBLAST.
+Evaluating ProbaBLAST's performance is perhaps the trickiest part of this project, as there is no "ground truth" to compare our results with. We opted for generating queries based on the probability distribution of the genome and added a few random indels and/or substitutions (mutation rate of 1\% was used). We generated many such queries, which we used as input to ProbaBLAST.
 
 We suspected that query sequences of different lengths would perform differently using ProbaBLAST. We chose values of 25, 50, and 100 nucleotides for the queries. 
 
@@ -130,6 +131,26 @@ Note that this method has an inherent flaw. We assume that the gold standard is 
 
 For the following results, we used a probabilistic genome of length 604466 nucleotides. The probabilities in the genome are distributed with the majority of the mass being assigned to a single nucleotide and the remainder split equally between the three other nucleotides. As we can see from figure \ref{data}, the most frequent nucleotide at each genome is generally greater than 90\%, although this is not always the case.
 
+\subsection{Running Time}
+
+\begin{table}
+\centering
+\caption{Running time to find matches in a test sequence of various sizes.}
+\label{rt}
+\begin{tabular}{|l|l|}
+\hline
+Sequence Size (nt) & Run Time (s) \\ \hline
+25 & 0.0043 \\ \hline
+50 & 0.0157\\ \hline
+100 & 0.0832 \\ 
+\hline
+\end{tabular}
+\end{table}
+
+We can see how long ProbaBLAST takes to find matches in test sequences of varying lengths in table \ref{rt}. Even for the longest length, ProbaBLAST is still very efficient, taking less than a tenth of a second to execute.
+
+
+\subsection{Experimental Results}
 \begin{table*}[]
 \centering
 \caption{Precision / Recall for \textbf{Maximum Likelihood Index}}
@@ -187,7 +208,7 @@ For the following results, we used a probabilistic genome of length 604466 nucle
 \end{tabular}
 \end{table*}
 
-We present the precision and recall for changing $T$ using various indexing schemes and test sequence lengths. Evaluation proceeded as described above.
+We present the precision and recall for changing $T$ using various indexing schemes and test sequence lengths. Evaluation proceeded as described above. We used 1000 sequences on each test length.
 
 \begin{figure*}
     \centering
@@ -196,7 +217,7 @@ We present the precision and recall for changing $T$ using various indexing sche
     \label{dists}
 \end{figure*}
 
-Tables \ref{ml}, \ref{t925}, \ref{t95} and \ref{t975} present the precision and recall of each of our method. They are separated by index and show how changing the query sequence length and ungapped extension phase threshold affects the performance of our algorithm. In bold we can see the maximum precision and recall for each index, while what we evaluate to be the best threshold is in italic.
+Tables \ref{ml}, \ref{t925}, \ref{t95} and \ref{t975} present the precision and recall of each of our methods. They are separated by index and show how changing the query sequence length and ungapped extension phase threshold affects the performance of our algorithm. In bold we can see the maximum precision and recall for each index, while what we evaluate to be the best threshold is in italic.
 
 Figure \ref{dists} shows how changing the threshold affects the number of matches we return for a single test example. We can see that all thresholds are able to detect the match where the query sequence was generated from. However, lower thresholds return many more sequences with lower scores as well.
 
@@ -215,7 +236,7 @@ This makes sense because as the threshold increases, we become more stringent ab
 
 On the other hand, as we increase $T$, we are also less likely to include the actual generation location as a match due to mutations. When we don't return it as a match, the recall decreases. 
 
-Thus tuning $T$ can affect the sensitivity of ProbaBLAST and it should be chosen based on the use case. If you only care about the highest scoring sequence, choosing a high $T$ will suffice (and it indeed what we evaluate for). But if you want anything that somewhat resembles the query sequence, you should choose a lower $T$. 
+Thus tuning $T$ can affect the sensitivity of ProbaBLAST and it should be chosen based on the use case. If you only care about the highest scoring sequence, choosing a high $T$ will suffice (and it is indeed what we evaluate for). But if you want anything that somewhat resembles the query sequence, you should choose a lower $T$. 
 
 One interpretation of this (resulting from the new scoring scheme) is that a higher $T$ will force the algorithm to behave more like deterministic BLAST and only return high probability matches. Lower $T$'s allow for lower scoring nucleotides to enter the matches.
 
@@ -229,7 +250,7 @@ As mentioned earlier, we chose the size of the seed to be 11. In every table we 
 
 \subsection{Mutations}
 We would like to provide some base intuition behind how mutations affect ProbaBLAST. 
-ProbaBLAST is more robust to substitutions than indels because a substitution is less defined with this framework. It is hard for us to detect if a nucleotide at a given position differs from the most likely nucleotide because of the nature of the probabilistic genome or from a true substitution. Thus we can treat these simply as appearing with its respective frequency (the rest of the sequence is not affected). 
+ProbaBLAST is more robust to substitutions than indels because a substitution is less defined within this framework. It is hard for us to detect if a nucleotide at a given position differs from the most likely nucleotide because of the nature of the probabilistic genome or from a true substitution. Thus we can treat these simply as appearing with its respective frequency (the rest of the sequence is not affected). 
 
 Indels are harder to correct for and we describe a method to handle this in future work. Lower thresholds could help account for this (at the expense of adding more matches) but a more robust method is described in Future Work. 
 
@@ -249,9 +270,11 @@ We showed that with the appropriate choices of $T$, ProbaBLAST can achieve high 
 
 As we mentioned before, we did not investigate the gapped extension phase in depth. We now discuss how ProbaBLAST could be modified to allow our previously ungapped alignments to include gaps. We have a slightly different question than in BLAST but we claim that the Needleman-Wunsh algorithm can still be used to find the optimal alignment under a given scoring scheme - in this case our probabilistic scheme.
 
-Before discussing this claim in detail, it is useful to first consider what an insertion or deletion means from a probabilistic genome. For the sake of this explanation, we assume $Q$ was generated by some unknown process from $D$. If we have an insertion into $Q$ then this new nucleotide would not be represented in $D$. Thus all nucleotides coming after the insertion will now point to the previous column of $D$ (see figure \ref{indel}b - shifts the distributions to the left). For a deletion in $Q$, a column of $D$ will now effectively never generate a nucleotide that is realized in $Q$. Thus all nucleotides coming after this deletion should be generated from the successor column in $D$ (see figure \ref{indel}a - shifts the distributions to the right). We can now view \"gaps\" as a device that shifts our distributions to try to best represent how the query sequence was generated.
+Before discussing this claim in detail, it is useful to first consider what an insertion or deletion means from a probabilistic genome. For the sake of this explanation, we assume $Q$ was generated by some unknown process from $D$. If we have an insertion into $Q$ then this new nucleotide would not be represented in $D$. Thus all nucleotides coming after the insertion will now point to the previous column of $D$ (see figure \ref{indel}b - shifts the distributions to the left). For a deletion in $Q$, a column of $D$ will now effectively never generate a nucleotide that is realized in $Q$. Thus all nucleotides coming after this deletion should be generated from the successor column in $D$ (see figure \ref{indel}a - shifts the distributions to the right). We can now view "gaps" as a device that shifts our distributions to try to best represent how the query sequence was generated.
 
-Now instead of aligning a sequence to another sequence, we are aligning a deterministic sequence to a probabilistic sequence. Another way to phrase this is \"using the given scoring scheme, find the alignment that is most likely to have generated the query sequence.\" Let us consider the Needleman-Wunsch algorithm and provide an interpretation that holds for this problem. In the dynamic programming matrix X, on one dimension we have the nucleotides forming $Q$ (indexed by j), and along the other we have positions of $P$ (indexed by i). We get the following update equations:
+Now instead of aligning a sequence to another sequence, we are aligning a deterministic sequence to a probabilistic sequence. Another way to phrase this is "using the given scoring scheme, find the alignment that is most likely to have generated the query sequence." 
+
+Let us consider the Needleman-Wunsch algorithm and provide an interpretation that holds for this problem. In the dynamic programming matrix X, on one dimension we have the nucleotides forming $Q$ (indexed by j), and along the other we have positions of $P$ (indexed by i). We get the following update equations:
 
 \begin{equation}
 X = max
@@ -267,10 +290,13 @@ When we calculate scores we can interpret each part of the equations as follows:
 \begin{description}
   \item[a)] Assume $q_j$ was generated from position $i$ of $P$.
   \item[b)] A deletion meaning position $i$ of $P$ never generated a realized nucleotide.
-  \item[c)] An insertion meaning position $i$ has does not generate at this step (but may in the future).
+  \item[c)] An insertion meaning position $i$ does not generate at this step (but may in the future).
 \end{description}
 
 The scoring scheme specifies that gaps should be allowed if it increases the likelihood of $Q$ by changing the positions nucleotides originated from.
+
+\subsection{Code}
+Code for this project can be found at \url{https://github.com/mike-n-7/ProbaBLAST}.
 
 \begin{thebibliography}{9}
 
